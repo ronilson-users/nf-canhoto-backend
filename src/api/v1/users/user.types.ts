@@ -11,3 +11,25 @@ export interface JwtPayload {
   role: UserRole;
   companyId?: string;
 }
+
+/** Formato único de usuário em TODAS as respostas da API (sempre `id`, nunca `_id`). */
+export interface UserResponse {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  companyId?: string;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface LoginResponse {
+  token: string;
+  user: UserResponse;
+}
+
+export interface PaginatedUsers {
+  users: UserResponse[];
+  pagination: { page: number; limit: number; total: number; totalPages: number };
+}

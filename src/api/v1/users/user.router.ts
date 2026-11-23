@@ -1,11 +1,12 @@
 import { Router } from 'express';
 
 import { authMiddleware, requireRole } from '@/shared/middleware/auth';
-import { validateBody } from '@/shared/middleware/validation';
+import { validateBody, validateParams } from '@/shared/middleware/validation';
 
 import * as userController from './user.controller';
 import {
   createUserSchema,
+  idSchema,
   loginSchema,
   registerSchema,
   updateProfileSchema,
@@ -46,8 +47,8 @@ router.post('/', ...adminOnly, validateBody(createUserSchema), userController.cr
  *   put: { summary: Atualiza usuário (admin), tags: [Users], security: [{ BearerAuth: [] }], responses: { 200: { description: OK } } }
  *   delete: { summary: Desativa usuário (admin), tags: [Users], security: [{ BearerAuth: [] }], responses: { 204: { description: Removido } } }
  */
-router.get('/:id', ...adminOnly, userController.getById);
-router.put('/:id', ...adminOnly, validateBody(updateUserSchema), userController.update);
-router.delete('/:id', ...adminOnly, userController.remove);
+router.get('/:id', ...adminOnly, validateParams(idSchema), userController.getById);
+router.put('/:id', ...adminOnly, validateParams(idSchema), validateBody(updateUserSchema), userController.update);
+router.delete('/:id', ...adminOnly, validateParams(idSchema), userController.remove);
 
 export default router;

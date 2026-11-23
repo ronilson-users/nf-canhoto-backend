@@ -1,16 +1,18 @@
 // Express 5 repassa erros de handlers async para o errorHandler: não precisa de try/catch.
+//
+// A validação (body e :id) acontece no router via validateBody/validateParams, que já
+// substituem req.body pelo dado validado. Aqui só tipamos esse dado.
 import type { Request, Response } from 'express';
 
-import { AppError } from '@/shared/utils/error';
+import { AppError, ForbiddenError } from '@/shared/utils/error';
 
 import { UserService } from './user.service';
-import {
-  createUserSchema,
-  idSchema,
-  loginSchema,
-  registerSchema,
-  updateProfileSchema,
-  updateUserSchema,
+import type {
+  CreateUserInput,
+  LoginInput,
+  RegisterInput,
+  UpdateProfileInput,
+  UpdateUserInput,
 } from './user.validation';
 
 const userService = new UserService();
@@ -28,14 +30,16 @@ const authUser = (req: Request) => {
   return req.user;
 };
 
+const idParam = (req: Request) => req.params.id as string;
+
 // ---- públicas ----
 export const register = async (req: Request, res: Response) => {
-  const user = await userService.createUser(registerSchema.parse(req.body));
+  const user = await userService.createUser(req.body as RegisterInput);
   send(res, 201, user, 'Usuário criado com sucesso');
 };
 
 export const login = async (req: Request, res: Response) => {
-  const { email, password } = loginSchema.parse(req.body);
+  const { email, password } = req.body as LoginInput;
   send(res, 200, await userService.login(email, password), 'Login realizado com sucesso');
 };
 
@@ -45,13 +49,13 @@ export const profile = async (req: Request, res: Response) => {
 };
 
 export const updateProfile = async (req: Request, res: Response) => {
-  const data = updateProfileSchema.parse(req.body);
+  const data = req.body as UpdateProfileInput;
   send(res, 200, await userService.updateProfile(authUser(req).id, data), 'Perfil atualizado com sucesso');
 };
 
 // ---- admin ----
 export const create = async (req: Request, res: Response) => {
-  send(res, 201, await userService.createUser(createUserSchema.parse(req.body)), 'Usuário criado com sucesso');
+  send(res, 201, await userService.createUser(req.body as CreateUserInput), 'Usuário criado com sucesso');
 };
 
 export const list = async (req: Request, res: Response) => {
@@ -61,18 +65,27 @@ export const list = async (req: Request, res: Response) => {
 };
 
 export const getById = async (req: Request, res: Response) => {
-  const { id } = idSchema.parse(req.params);
-  send(res, 200, await userService.getUserById(id));
+  send(res, 200, await userService.getUserById(idParam(req)));
 };
 
 export const update = async (req: Request, res: Response) => {
-  const { id } = idSchema.parse(req.params);
-  const data = updateUserSchema.parse(req.body);
+  const id = idParam(req);
+  const data = req.body as UpdateUserInput;
+
+  // Evita o admin se trancar para fora do sistema.
+  const demotes = data.isActive === false || (data.role !== undefined && data.role !== 'admin');
+  if (id === authUser(req).id && demotes) {
+    throw new ForbiddenError('Você não pode rebaixar ou desativar a própria conta');
+  }
+
   send(res, 200, await userService.updateUser(id, data), 'Usuário atualizado com sucesso');
 };
 
 export const remove = async (req: Request, res: Response) => {
-  const { id } = idSchema.parse(req.params);
+  const id = idParam(req);
+  if (id === authUser(req).id) {
+    throw new ForbiddenError('Você não pode desativar a própria conta');
+  }
   await userService.deleteUser(id);
   res.status(204).send();
 };

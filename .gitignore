@@ -15,6 +15,7 @@ yarn-error.*
 
 # local env files
 .env*.local
+.env
 
 # typescript
 *.tsbuildinfo
@@ -27,4 +28,4 @@ example
 
 setup-commitizen.sh
 storage/
-.env
+

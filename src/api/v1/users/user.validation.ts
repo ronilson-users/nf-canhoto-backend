@@ -53,3 +53,10 @@ export const loginSchema = z.object({
 });
 
 export const idSchema = z.object({ id: objectId });
+
+// Tipos derivados dos schemas (substituem o antigo user.dto.ts)
+export type CreateUserInput = z.infer<typeof createUserSchema>;
+export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;
+export type UpdateUserInput = z.infer<typeof updateUserSchema>;
+export type RegisterInput = z.infer<typeof registerSchema>;
+export type LoginInput = z.infer<typeof loginSchema>;
